@@ -40,7 +40,7 @@ class ResearchCategory extends Model
      */
     public function researchAreas(): HasMany
     {
-        return $this->hasMany(ResearchArea::class, 'category_id', 'category_id')
+        return $this->hasMany(ResearchArea::class, 'category_id')
             ->orderBy('display_order');
     }
 
