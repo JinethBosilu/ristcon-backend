@@ -11,7 +11,6 @@ class ResearchArea extends Model
     use HasFactory;
 
     protected $table = 'research_areas';
-    protected $primaryKey = 'area_id';
 
     protected $fillable = [
         'category_id',
@@ -32,7 +31,7 @@ class ResearchArea extends Model
      */
     public function category(): BelongsTo
     {
-        return $this->belongsTo(ResearchCategory::class, 'category_id', 'category_id');
+        return $this->belongsTo(ResearchCategory::class, 'category_id');
     }
 
     /**

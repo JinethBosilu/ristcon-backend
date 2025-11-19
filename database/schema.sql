@@ -119,7 +119,7 @@ ADD CONSTRAINT fk_assets_conference FOREIGN KEY (conference_id) REFERENCES confe
 
 -- Research categories table
 ALTER TABLE research_categories
-ADD COLUMN conference_id BIGINT UNSIGNED NULL AFTER id,
+ADD COLUMN conference_id BIGINT UNSIGNED NOT NULL AFTER id,
 ADD COLUMN category_code VARCHAR(10),
 ADD COLUMN category_name VARCHAR(255) NOT NULL,
 ADD COLUMN description TEXT,

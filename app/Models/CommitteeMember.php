@@ -12,7 +12,6 @@ class CommitteeMember extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'committee_members';
-    protected $primaryKey = 'member_id';
 
     protected $fillable = [
         'conference_id',
@@ -38,7 +37,7 @@ class CommitteeMember extends Model
      */
     public function conference(): BelongsTo
     {
-        return $this->belongsTo(Conference::class, 'conference_id', 'conference_id');
+        return $this->belongsTo(Conference::class, 'conference_id');
     }
 
     /**

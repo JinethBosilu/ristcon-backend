@@ -11,7 +11,6 @@ class SubmissionMethod extends Model
     use HasFactory;
 
     protected $table = 'submission_methods';
-    protected $primaryKey = 'method_id';
 
     protected $fillable = [
         'conference_id',
@@ -31,6 +30,6 @@ class SubmissionMethod extends Model
      */
     public function conference(): BelongsTo
     {
-        return $this->belongsTo(Conference::class, 'conference_id', 'conference_id');
+        return $this->belongsTo(Conference::class, 'conference_id');
     }
 }

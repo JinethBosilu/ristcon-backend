@@ -12,7 +12,6 @@ class ContactPerson extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'contact_persons';
-    protected $primaryKey = 'contact_id';
 
     protected $fillable = [
         'conference_id',
@@ -35,6 +34,6 @@ class ContactPerson extends Model
      */
     public function conference(): BelongsTo
     {
-        return $this->belongsTo(Conference::class, 'conference_id', 'conference_id');
+        return $this->belongsTo(Conference::class, 'conference_id');
     }
 }

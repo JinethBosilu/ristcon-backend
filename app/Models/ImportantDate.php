@@ -12,7 +12,6 @@ class ImportantDate extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'important_dates';
-    protected $primaryKey = 'date_id';
 
     protected $fillable = [
         'conference_id',
@@ -37,7 +36,7 @@ class ImportantDate extends Model
      */
     public function conference(): BelongsTo
     {
-        return $this->belongsTo(Conference::class, 'conference_id', 'conference_id');
+        return $this->belongsTo(Conference::class, 'conference_id');
     }
 
     /**

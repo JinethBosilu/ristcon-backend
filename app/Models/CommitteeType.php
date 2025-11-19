@@ -11,7 +11,6 @@ class CommitteeType extends Model
     use HasFactory;
 
     protected $table = 'committee_types';
-    protected $primaryKey = 'committee_type_id';
 
     protected $fillable = [
         'committee_name',

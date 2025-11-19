@@ -12,7 +12,6 @@ class AuthorPageConfig extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'author_page_config';
-    protected $primaryKey = 'config_id';
 
     protected $fillable = [
         'conference_id',
@@ -35,6 +34,6 @@ class AuthorPageConfig extends Model
      */
     public function conference(): BelongsTo
     {
-        return $this->belongsTo(Conference::class, 'conference_id', 'conference_id');
+        return $this->belongsTo(Conference::class, 'conference_id');
     }
 }

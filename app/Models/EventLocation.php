@@ -12,7 +12,6 @@ class EventLocation extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'event_locations';
-    protected $primaryKey = 'location_id';
 
     protected $fillable = [
         'conference_id',
@@ -38,7 +37,7 @@ class EventLocation extends Model
      */
     public function conference(): BelongsTo
     {
-        return $this->belongsTo(Conference::class, 'conference_id', 'conference_id');
+        return $this->belongsTo(Conference::class, 'conference_id');
     }
 
     /**
