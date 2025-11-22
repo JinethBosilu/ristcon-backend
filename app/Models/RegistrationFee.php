@@ -2,35 +2,31 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ContactPerson extends Model
+class RegistrationFee extends Model
 {
-    use HasFactory;
-
-    protected $table = 'contact_persons';
+    protected $table = 'registration_fees';
+    protected $primaryKey = 'fee_id';
 
     protected $fillable = [
         'conference_id',
-        'full_name',
-        'role',
-        'department',
-        'mobile',
-        'phone',
-        'email',
-        'address',
+        'attendee_type',
+        'currency',
+        'amount',
+        'early_bird_amount',
+        'early_bird_deadline',
         'display_order',
     ];
 
     protected $casts = [
+        'amount' => 'decimal:2',
+        'early_bird_amount' => 'decimal:2',
+        'early_bird_deadline' => 'date',
         'display_order' => 'integer',
     ];
 
-    /**
-     * Get the conference that owns the contact person
-     */
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');

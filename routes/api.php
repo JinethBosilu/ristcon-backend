@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\ConferenceController;
+use App\Http\Controllers\Api\PaymentInformationController;
+use App\Http\Controllers\Api\RegistrationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +20,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/conferences/{year}/research-areas', [ConferenceController::class, 'researchAreas']);
     Route::get('/conferences/{year}/location', [ConferenceController::class, 'location']);
     Route::get('/conferences/{year}/author-instructions', [ConferenceController::class, 'authorInstructions']);
+    
+    // Registration and Payment routes
+    Route::get('/registration', [RegistrationController::class, 'index']);
+    Route::get('/registration/fees', [RegistrationController::class, 'fees']);
+    Route::get('/registration/policies', [RegistrationController::class, 'policies']);
+    Route::get('/payment-information', [PaymentInformationController::class, 'index']);
 
     // Admin routes (protected by Sanctum authentication)
     Route::middleware('auth:sanctum')->prefix('admin')->group(function () {

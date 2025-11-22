@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('submission_methods', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('conference_id');
+            $table->enum('document_type', ['author_info', 'abstract', 'extended_abstract', 'camera_ready', 'other']);
+            $table->enum('submission_method', ['email', 'cmt_upload', 'online_form', 'postal']);
+            $table->string('email_address')->nullable();
+            $table->text('notes')->nullable();
+            $table->integer('display_order');
             $table->timestamps();
+            
+            $table->foreign('conference_id')->references('id')->on('conferences')->onDelete('cascade');
         });
     }
 

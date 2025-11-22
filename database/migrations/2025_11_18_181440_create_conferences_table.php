@@ -13,7 +13,20 @@ return new class extends Migration
     {
         Schema::create('conferences', function (Blueprint $table) {
             $table->id();
+            $table->year('year');
+            $table->integer('edition_number');
+            $table->date('conference_date');
+            $table->enum('venue_type', ['physical', 'virtual', 'hybrid'])->default('physical');
+            $table->string('venue_location')->nullable();
+            $table->string('theme');
+            $table->text('description')->nullable();
+            $table->enum('status', ['upcoming', 'ongoing', 'completed', 'cancelled'])->default('upcoming');
+            $table->string('general_email');
+            $table->dateTime('last_updated')->nullable();
+            $table->year('copyright_year');
+            $table->string('site_version')->default('1.0');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

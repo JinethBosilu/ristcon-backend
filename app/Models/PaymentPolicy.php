@@ -2,35 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ContactPerson extends Model
+class PaymentPolicy extends Model
 {
-    use HasFactory;
-
-    protected $table = 'contact_persons';
+    protected $table = 'payment_policies';
+    protected $primaryKey = 'policy_id';
 
     protected $fillable = [
         'conference_id',
-        'full_name',
-        'role',
-        'department',
-        'mobile',
-        'phone',
-        'email',
-        'address',
+        'policy_text',
+        'policy_type',
+        'is_highlighted',
         'display_order',
     ];
 
     protected $casts = [
+        'is_highlighted' => 'boolean',
         'display_order' => 'integer',
     ];
 
-    /**
-     * Get the conference that owns the contact person
-     */
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');

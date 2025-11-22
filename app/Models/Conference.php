@@ -132,6 +132,33 @@ class Conference extends Model
     }
 
     /**
+     * Get payment information for the conference
+     */
+    public function paymentInformation(): HasMany
+    {
+        return $this->hasMany(PaymentInformation::class, 'conference_id')
+            ->orderBy('display_order');
+    }
+
+    /**
+     * Get registration fees for the conference
+     */
+    public function registrationFees(): HasMany
+    {
+        return $this->hasMany(RegistrationFee::class, 'conference_id')
+            ->orderBy('display_order');
+    }
+
+    /**
+     * Get payment policies for the conference
+     */
+    public function paymentPolicies(): HasMany
+    {
+        return $this->hasMany(PaymentPolicy::class, 'conference_id')
+            ->orderBy('display_order');
+    }
+
+    /**
      * Scope to get upcoming conferences
      */
     public function scopeUpcoming($query)

@@ -11,17 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('research_categories', function (Blueprint $table) {
-            $table->id();
+        Schema::create('payment_policies', function (Blueprint $table) {
+            $table->id('policy_id');
             $table->unsignedBigInteger('conference_id');
-            $table->string('category_code', 10);
-            $table->string('category_name');
-            $table->text('description')->nullable();
-            $table->integer('display_order');
+            $table->text('policy_text')->comment('Policy text/description');
+            $table->enum('policy_type', ['requirement', 'restriction', 'note'])->default('note');
+            $table->integer('display_order')->default(0);
+            $table->boolean('is_highlighted')->default(false)->comment('Highlight important policies');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             
             $table->foreign('conference_id')->references('id')->on('conferences')->onDelete('cascade');
+            $table->index(['conference_id', 'policy_type']);
         });
     }
 
@@ -30,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('research_categories');
+        Schema::dropIfExists('payment_policies');
     }
 };

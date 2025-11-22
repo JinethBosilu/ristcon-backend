@@ -13,7 +13,19 @@ return new class extends Migration
     {
         Schema::create('event_locations', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('conference_id');
+            $table->string('venue_name');
+            $table->text('full_address');
+            $table->string('city');
+            $table->string('country');
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
+            $table->text('google_maps_embed_url')->nullable();
+            $table->string('google_maps_link')->nullable();
+            $table->boolean('is_virtual')->default(false);
             $table->timestamps();
+            
+            $table->foreign('conference_id')->references('id')->on('conferences')->onDelete('cascade');
         });
     }
 

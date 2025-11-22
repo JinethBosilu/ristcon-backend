@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('committee_types', function (Blueprint $table) {
             $table->id();
+            $table->string('committee_name');
+            $table->integer('display_order');
             $table->timestamps();
         });
     }
