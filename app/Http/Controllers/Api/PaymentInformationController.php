@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePaymentInformationRequest;
+use App\Http\Requests\UpdatePaymentInformationRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\PaymentInformation;
 use Illuminate\Http\Request;
 
@@ -21,38 +24,19 @@ class PaymentInformationController extends Controller
         ->orderBy('display_order')
         ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $paymentInfo,
-        ]);
+        return ApiResponse::success($paymentInfo);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StorePaymentInformationRequest $request)
     {
-        $validated = $request->validate([
-            'conference_id' => 'required|exists:conferences,id',
-            'payment_type' => 'required|in:local,foreign',
-            'beneficiary_name' => 'required|string',
-            'bank_name' => 'required|string',
-            'account_number' => 'required|string',
-            'swift_code' => 'nullable|string',
-            'branch_code' => 'nullable|string',
-            'branch_name' => 'nullable|string',
-            'bank_address' => 'nullable|string',
-            'currency' => 'required|string',
-            'additional_info' => 'nullable|string',
-            'display_order' => 'nullable|integer',
-        ]);
+        $validated = $request->validated();
 
         $paymentInfo = PaymentInformation::create($validated);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $paymentInfo,
-        ], 201);
+        return ApiResponse::success($paymentInfo, 'Payment information created successfully', [], 201);
     }
 
     /**
@@ -62,39 +46,21 @@ class PaymentInformationController extends Controller
     {
         $paymentInfo = PaymentInformation::findOrFail($id);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $paymentInfo,
-        ]);
+        return ApiResponse::success($paymentInfo);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdatePaymentInformationRequest $request, string $id)
     {
         $paymentInfo = PaymentInformation::findOrFail($id);
 
-        $validated = $request->validate([
-            'payment_type' => 'sometimes|in:local,foreign',
-            'beneficiary_name' => 'sometimes|string',
-            'bank_name' => 'sometimes|string',
-            'account_number' => 'sometimes|string',
-            'swift_code' => 'nullable|string',
-            'branch_code' => 'nullable|string',
-            'branch_name' => 'nullable|string',
-            'bank_address' => 'nullable|string',
-            'currency' => 'sometimes|string',
-            'additional_info' => 'nullable|string',
-            'display_order' => 'nullable|integer',
-        ]);
+        $validated = $request->validated();
 
         $paymentInfo->update($validated);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $paymentInfo,
-        ]);
+        return ApiResponse::success($paymentInfo, 'Payment information updated successfully');
     }
 
     /**
@@ -105,9 +71,6 @@ class PaymentInformationController extends Controller
         $paymentInfo = PaymentInformation::findOrFail($id);
         $paymentInfo->delete();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Payment information deleted successfully',
-        ]);
+        return ApiResponse::success(null, 'Payment information deleted successfully');
     }
 }

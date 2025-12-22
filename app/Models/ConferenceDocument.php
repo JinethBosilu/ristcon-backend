@@ -19,7 +19,7 @@ class ConferenceDocument extends Model
         'file_name',
         'file_path',
         'display_name',
-        'is_available',
+        'is_active',
         'button_width_percent',
         'display_order',
         'mime_type',
@@ -27,13 +27,13 @@ class ConferenceDocument extends Model
     ];
 
     protected $casts = [
-        'is_available' => 'boolean',
+        'is_active' => 'boolean',
         'button_width_percent' => 'integer',
         'display_order' => 'integer',
         'file_size' => 'integer',
     ];
 
-    protected $appends = ['download_url', 'file_size_formatted'];
+    protected $appends = ['download_url', 'file_size_formatted', 'is_available'];
 
     /**
      * Get the conference that owns the document
@@ -48,7 +48,7 @@ class ConferenceDocument extends Model
      */
     public function getDownloadUrlAttribute(): ?string
     {
-        if ($this->is_available && $this->file_path) {
+        if ($this->is_active && $this->file_path) {
             return Storage::url($this->file_path);
         }
 
@@ -77,11 +77,20 @@ class ConferenceDocument extends Model
     }
 
     /**
-     * Scope to get available documents
+     * Backward compatibility accessor for is_available
+     * Maps to is_active field
      */
-    public function scopeAvailable($query)
+    public function getIsAvailableAttribute(): bool
     {
-        return $query->where('is_available', true);
+        return $this->is_active;
+    }
+
+    /**
+     * Scope to get active documents
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     /**

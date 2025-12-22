@@ -3,144 +3,72 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Conference;
+use App\Http\Requests\ConferenceQueryRequest;
+use App\Http\Responses\ApiResponse;
+use App\Services\ConferenceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ConferenceController extends Controller
 {
+    protected ConferenceService $conferenceService;
+
+    public function __construct(ConferenceService $conferenceService)
+    {
+        $this->conferenceService = $conferenceService;
+    }
+
     /**
      * Get all conferences
      */
-    public function index(Request $request): JsonResponse
+    public function index(ConferenceQueryRequest $request): JsonResponse
     {
-        $query = Conference::query();
+        $filters = $request->only(['status', 'year']);
+        $includes = $request->input('include');
 
-        // Filter by status
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
+        $conferences = $this->conferenceService->getAllConferences($filters, $includes);
 
-        // Filter by year
-        if ($request->has('year')) {
-            $query->where('year', $request->year);
-        }
-
-        // Include relations
-        if ($request->has('include')) {
-            $includes = explode(',', $request->include);
-            
-            $relationMap = [
-                'speakers' => 'speakers',
-                'important_dates' => 'importantDates',
-                'committees' => 'committeeMembers.committeeType',
-                'documents' => 'documents',
-                'assets' => 'assets',
-                'location' => 'eventLocation',
-                'research_areas' => 'researchCategories.researchAreas',
-                'author_config' => 'authorPageConfig',
-                'submission_methods' => 'submissionMethods',
-                'presentation_guidelines' => 'presentationGuidelines',
-                'social_media' => 'socialMediaLinks',
-                'abstract_formats' => 'abstractFormats',
-            ];
-
-            foreach ($includes as $include) {
-                $include = trim($include);
-                if (isset($relationMap[$include])) {
-                    $query->with($relationMap[$include]);
-                }
-            }
-        }
-
-        $conferences = $query->orderBy('year', 'desc')->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $conferences,
-            'meta' => [
-                'total' => $conferences->count()
-            ]
-        ]);
+        return ApiResponse::success(
+            $conferences,
+            '',
+            ['total' => $conferences->count()]
+        );
     }
 
     /**
      * Get conference by year
      */
-    public function show(Request $request, int $year): JsonResponse
+    public function show(ConferenceQueryRequest $request, int $year): JsonResponse
     {
-        $query = Conference::where('year', $year);
-
-        // Include relations
-        if ($request->has('include')) {
-            $includes = explode(',', $request->include);
-            
-            $relationMap = [
-                'speakers' => 'speakers',
-                'important_dates' => 'importantDates',
-                'committees' => 'committeeMembers.committeeType',
-                'documents' => 'documents',
-                'assets' => 'assets',
-                'location' => 'eventLocation',
-                'research_areas' => 'researchCategories.researchAreas',
-                'author_config' => 'authorPageConfig',
-                'submission_methods' => 'submissionMethods',
-                'presentation_guidelines' => 'presentationGuidelines',
-                'contacts' => 'contactPersons',
-                'social_media' => 'socialMediaLinks',
-                'abstract_formats' => 'abstractFormats',
-            ];
-
-            foreach ($includes as $include) {
-                $include = trim($include);
-                if (isset($relationMap[$include])) {
-                    $query->with($relationMap[$include]);
-                }
-            }
-        }
-
-        $conference = $query->first();
+        $conference = $this->conferenceService->getConferenceByYear(
+            $year,
+            $request->input('include')
+        );
 
         if (!$conference) {
-            return response()->json([
-                'success' => false,
-                'message' => "Conference not found for year {$year}"
-            ], 404);
+            return ApiResponse::notFound("Conference not found for year {$year}");
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $conference
-        ]);
+        return ApiResponse::success($conference);
     }
 
     /**
      * Get speakers for a conference
      */
-    public function speakers(Request $request, int $year): JsonResponse
+    public function speakers(ConferenceQueryRequest $request, int $year): JsonResponse
     {
-        $conference = Conference::where('year', $year)->first();
+        $conference = $this->conferenceService->getConferenceByYear($year);
 
         if (!$conference) {
-            return response()->json([
-                'success' => false,
-                'message' => "Conference not found for year {$year}"
-            ], 404);
+            return ApiResponse::notFound("Conference not found for year {$year}");
         }
 
-        $query = $conference->speakers();
+        $speakers = $this->conferenceService->getConferenceSpeakers(
+            $conference,
+            $request->input('type')
+        );
 
-        // Filter by speaker type
-        if ($request->has('type')) {
-            $query->where('speaker_type', $request->type);
-        }
-
-        $speakers = $query->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $speakers
-        ]);
+        return ApiResponse::success($speakers);
     }
 
     /**
@@ -148,52 +76,37 @@ class ConferenceController extends Controller
      */
     public function importantDates(int $year): JsonResponse
     {
-        $conference = Conference::where('year', $year)->first();
+        $conference = $this->conferenceService->getConferenceByYear($year);
 
         if (!$conference) {
-            return response()->json([
-                'success' => false,
-                'message' => "Conference not found for year {$year}"
-            ], 404);
+            return ApiResponse::notFound("Conference not found for year {$year}");
         }
 
-        $dates = $conference->importantDates;
+        $dates = $this->conferenceService->getConferenceDates($conference);
 
-        return response()->json([
-            'success' => true,
-            'data' => $dates
-        ]);
+        return ApiResponse::success($dates);
     }
 
     /**
      * Get committee members for a conference
      */
-    public function committees(Request $request, int $year): JsonResponse
+    public function committees(ConferenceQueryRequest $request, int $year): JsonResponse
     {
-        $conference = Conference::where('year', $year)->first();
+        $conference = $this->conferenceService->getConferenceByYear($year);
 
         if (!$conference) {
-            return response()->json([
-                'success' => false,
-                'message' => "Conference not found for year {$year}"
-            ], 404);
+            return ApiResponse::notFound("Conference not found for year {$year}");
         }
 
-        $query = $conference->committeeMembers()->with('committeeType');
+        $members = $this->conferenceService->getConferenceCommittees(
+            $conference,
+            $request->input('type')
+        );
 
-        // Filter by committee type
-        if ($request->has('type')) {
-            $query->whereHas('committeeType', function ($q) use ($request) {
-                $q->where('committee_name', $request->type);
-            });
-        }
+        // Group by committee type
+        $grouped = $members->groupBy('committeeType.committee_name');
 
-        $members = $query->get()->groupBy('committeeType.committee_name');
-
-        return response()->json([
-            'success' => true,
-            'data' => $members
-        ]);
+        return ApiResponse::success($grouped);
     }
 
     /**
@@ -201,56 +114,35 @@ class ConferenceController extends Controller
      */
     public function contacts(int $year): JsonResponse
     {
-        $conference = Conference::where('year', $year)->first();
+        $conference = $this->conferenceService->getConferenceByYear($year);
 
         if (!$conference) {
-            return response()->json([
-                'success' => false,
-                'message' => "Conference not found for year {$year}"
-            ], 404);
+            return ApiResponse::notFound("Conference not found for year {$year}");
         }
 
-        $contacts = $conference->contactPersons;
+        $contacts = $this->conferenceService->getConferenceContacts($conference);
 
-        return response()->json([
-            'success' => true,
-            'data' => $contacts
-        ]);
+        return ApiResponse::success($contacts);
     }
 
     /**
      * Get documents for a conference
      */
-    public function documents(Request $request, int $year): JsonResponse
+    public function documents(ConferenceQueryRequest $request, int $year): JsonResponse
     {
-        $conference = Conference::where('year', $year)->first();
+        $conference = $this->conferenceService->getConferenceByYear($year);
 
         if (!$conference) {
-            return response()->json([
-                'success' => false,
-                'message' => "Conference not found for year {$year}"
-            ], 404);
+            return ApiResponse::notFound("Conference not found for year {$year}");
         }
 
-        $query = $conference->documents();
+        $documents = $this->conferenceService->getConferenceDocuments(
+            $conference,
+            $request->input('category'),
+            $request->has('available') ? filter_var($request->input('available'), FILTER_VALIDATE_BOOLEAN) : null
+        );
 
-        // Filter by category
-        if ($request->has('category')) {
-            $query->byCategory($request->category);
-        }
-
-        // Filter by availability
-        if ($request->has('available')) {
-            $available = filter_var($request->available, FILTER_VALIDATE_BOOLEAN);
-            $query->where('is_available', $available);
-        }
-
-        $documents = $query->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $documents
-        ]);
+        return ApiResponse::success($documents);
     }
 
     /**
@@ -258,24 +150,15 @@ class ConferenceController extends Controller
      */
     public function researchAreas(int $year): JsonResponse
     {
-        $conference = Conference::where('year', $year)->first();
+        $conference = $this->conferenceService->getConferenceByYear($year);
 
         if (!$conference) {
-            return response()->json([
-                'success' => false,
-                'message' => "Conference not found for year {$year}"
-            ], 404);
+            return ApiResponse::notFound("Conference not found for year {$year}");
         }
 
-        $categories = $conference->researchCategories()
-            ->with('researchAreas')
-            ->active()
-            ->get();
+        $categories = $this->conferenceService->getConferenceResearchAreas($conference);
 
-        return response()->json([
-            'success' => true,
-            'data' => $categories
-        ]);
+        return ApiResponse::success($categories);
     }
 
     /**
@@ -283,28 +166,19 @@ class ConferenceController extends Controller
      */
     public function location(int $year): JsonResponse
     {
-        $conference = Conference::where('year', $year)->first();
+        $conference = $this->conferenceService->getConferenceByYear($year);
 
         if (!$conference) {
-            return response()->json([
-                'success' => false,
-                'message' => "Conference not found for year {$year}"
-            ], 404);
+            return ApiResponse::notFound("Conference not found for year {$year}");
         }
 
-        $location = $conference->eventLocation;
+        $location = $this->conferenceService->getConferenceLocation($conference);
 
         if (!$location) {
-            return response()->json([
-                'success' => false,
-                'message' => "Location not found for this conference"
-            ], 404);
+            return ApiResponse::notFound("Location not found for this conference");
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $location
-        ]);
+        return ApiResponse::success($location);
     }
 
     /**
@@ -312,28 +186,12 @@ class ConferenceController extends Controller
      */
     public function authorInstructions(int $year): JsonResponse
     {
-        $conference = Conference::where('year', $year)
-            ->with([
-                'authorPageConfig',
-                'submissionMethods',
-                'presentationGuidelines'
-            ])
-            ->first();
+        $data = $this->conferenceService->getAuthorInstructions($year);
 
-        if (!$conference) {
-            return response()->json([
-                'success' => false,
-                'message' => "Conference not found for year {$year}"
-            ], 404);
+        if (empty($data)) {
+            return ApiResponse::notFound("Conference not found for year {$year}");
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'config' => $conference->authorPageConfig,
-                'submission_methods' => $conference->submissionMethods,
-                'presentation_guidelines' => $conference->presentationGuidelines,
-            ]
-        ]);
+        return ApiResponse::success($data);
     }
 }

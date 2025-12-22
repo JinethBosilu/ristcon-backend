@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreRegistrationFeeRequest;
+use App\Http\Requests\UpdateRegistrationFeeRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\RegistrationFee;
 use App\Models\PaymentPolicy;
 use Illuminate\Http\Request;
@@ -28,12 +31,9 @@ class RegistrationController extends Controller
         ->orderBy('display_order')
         ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'fees' => $fees,
-                'policies' => $policies,
-            ],
+        return ApiResponse::success([
+            'fees' => $fees,
+            'policies' => $policies,
         ]);
     }
 
@@ -50,10 +50,7 @@ class RegistrationController extends Controller
         ->orderBy('display_order')
         ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $fees,
-        ]);
+        return ApiResponse::success($fees);
     }
 
     /**
@@ -69,57 +66,33 @@ class RegistrationController extends Controller
         ->orderBy('display_order')
         ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $policies,
-        ]);
+        return ApiResponse::success($policies);
     }
 
     /**
      * Store a newly created registration fee.
      */
-    public function store(Request $request)
+    public function store(StoreRegistrationFeeRequest $request)
     {
-        $validated = $request->validate([
-            'conference_id' => 'required|exists:conferences,id',
-            'attendee_type' => 'required|string',
-            'currency' => 'required|string',
-            'amount' => 'required|numeric',
-            'early_bird_amount' => 'nullable|numeric',
-            'early_bird_deadline' => 'nullable|date',
-            'display_order' => 'nullable|integer',
-        ]);
+        $validated = $request->validated();
 
         $fee = RegistrationFee::create($validated);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $fee,
-        ], 201);
+        return ApiResponse::success($fee, 'Registration fee created successfully', [], 201);
     }
 
     /**
      * Update the specified registration fee.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateRegistrationFeeRequest $request, string $id)
     {
         $fee = RegistrationFee::findOrFail($id);
 
-        $validated = $request->validate([
-            'attendee_type' => 'sometimes|string',
-            'currency' => 'sometimes|string',
-            'amount' => 'sometimes|numeric',
-            'early_bird_amount' => 'nullable|numeric',
-            'early_bird_deadline' => 'nullable|date',
-            'display_order' => 'nullable|integer',
-        ]);
+        $validated = $request->validated();
 
         $fee->update($validated);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $fee,
-        ]);
+        return ApiResponse::success($fee, 'Registration fee updated successfully');
     }
 
     /**
@@ -130,9 +103,6 @@ class RegistrationController extends Controller
         $fee = RegistrationFee::findOrFail($id);
         $fee->delete();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Registration fee deleted successfully',
-        ]);
+        return ApiResponse::success(null, 'Registration fee deleted successfully');
     }
 }
