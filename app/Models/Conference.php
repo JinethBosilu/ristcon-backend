@@ -186,6 +186,15 @@ class Conference extends Model
     }
 
     /**
+     * Get abstract formats for the conference
+     */
+    public function abstractFormats(): HasMany
+    {
+        return $this->hasMany(AbstractFormat::class, 'conference_id')
+            ->orderBy('display_order');
+    }
+
+    /**
      * Get countdown data for the conference
      */
     public function getCountdownAttribute()
