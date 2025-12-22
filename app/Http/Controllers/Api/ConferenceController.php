@@ -41,6 +41,7 @@ class ConferenceController extends Controller
                 'author_config' => 'authorPageConfig',
                 'submission_methods' => 'submissionMethods',
                 'presentation_guidelines' => 'presentationGuidelines',
+                'social_media' => 'socialMediaLinks',
             ];
 
             foreach ($includes as $include) {
@@ -85,6 +86,7 @@ class ConferenceController extends Controller
                 'submission_methods' => 'submissionMethods',
                 'presentation_guidelines' => 'presentationGuidelines',
                 'contacts' => 'contactPersons',
+                'social_media' => 'socialMediaLinks',
             ];
 
             foreach ($includes as $include) {

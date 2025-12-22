@@ -24,6 +24,7 @@ class Conference extends Model
         'description',
         'status',
         'general_email',
+        'availability_hours',
         'last_updated',
         'copyright_year',
         'site_version',
@@ -155,6 +156,16 @@ class Conference extends Model
     public function paymentPolicies(): HasMany
     {
         return $this->hasMany(PaymentPolicy::class, 'conference_id')
+            ->orderBy('display_order');
+    }
+
+    /**
+     * Get social media links for the conference
+     */
+    public function socialMediaLinks(): HasMany
+    {
+        return $this->hasMany(SocialMediaLink::class, 'conference_id')
+            ->where('is_active', true)
             ->orderBy('display_order');
     }
 
