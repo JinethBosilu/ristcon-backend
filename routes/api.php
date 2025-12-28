@@ -1,13 +1,26 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ConferenceController;
+use App\Http\Controllers\Api\ContactPersonController;
+use App\Http\Controllers\Api\EventLocationController;
 use App\Http\Controllers\Api\PaymentInformationController;
 use App\Http\Controllers\Api\RegistrationController;
+use App\Http\Controllers\Api\RegistrationFeeController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Public API routes (no authentication required)
 Route::prefix('v1')->group(function () {
+    
+    // Authentication routes
+    Route::post('/admin/login', [AuthController::class, 'login']);
+    
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/admin/logout', [AuthController::class, 'logout']);
+        Route::get('/admin/me', [AuthController::class, 'me']);
+    });
     
     // Conference routes
     Route::get('/conferences', [ConferenceController::class, 'index']);
@@ -20,6 +33,17 @@ Route::prefix('v1')->group(function () {
     Route::get('/conferences/{year}/research-areas', [ConferenceController::class, 'researchAreas']);
     Route::get('/conferences/{year}/location', [ConferenceController::class, 'location']);
     Route::get('/conferences/{year}/author-instructions', [ConferenceController::class, 'authorInstructions']);
+    Route::get('/conferences/{year}/assets', [ConferenceController::class, 'assets']);
+    Route::get('/conferences/{year}/social-media', [ConferenceController::class, 'socialMediaLinks']);
+    
+    // Event locations (separate management)
+    Route::get('/event-locations/{year}', [EventLocationController::class, 'show']);
+    
+    // Registration fees
+    Route::get('/registration-fees/{year}', [RegistrationFeeController::class, 'index']);
+    
+    // Contact persons
+    Route::get('/contact-persons/{year}', [ContactPersonController::class, 'index']);
     
     // Registration and Payment routes
     Route::get('/registration', [RegistrationController::class, 'index']);
@@ -64,6 +88,41 @@ Route::prefix('v1')->group(function () {
         
         // Assets management
         Route::post('/conferences/{year}/assets', [ConferenceController::class, 'uploadAsset']);
+        Route::put('/assets/{id}', [ConferenceController::class, 'updateAsset']);
         Route::delete('/assets/{id}', [ConferenceController::class, 'deleteAsset']);
+        
+        // Social media management
+        Route::post('/conferences/{year}/social-media', [ConferenceController::class, 'addSocialMediaLink']);
+        Route::put('/social-media/{id}', [ConferenceController::class, 'updateSocialMediaLink']);
+        Route::delete('/social-media/{id}', [ConferenceController::class, 'deleteSocialMediaLink']);
+        
+        // Author instructions management
+        Route::put('/conferences/{year}/author-config', [ConferenceController::class, 'updateAuthorConfig']);
+        Route::post('/conferences/{year}/submission-methods', [ConferenceController::class, 'addSubmissionMethod']);
+        Route::put('/submission-methods/{id}', [ConferenceController::class, 'updateSubmissionMethod']);
+        Route::delete('/submission-methods/{id}', [ConferenceController::class, 'deleteSubmissionMethod']);
+        Route::post('/conferences/{year}/presentation-guidelines', [ConferenceController::class, 'addPresentationGuideline']);
+        Route::put('/presentation-guidelines/{id}', [ConferenceController::class, 'updatePresentationGuideline']);
+        Route::delete('/presentation-guidelines/{id}', [ConferenceController::class, 'deletePresentationGuideline']);
+        
+        // Event location management
+        Route::put('/event-locations/{year}', [EventLocationController::class, 'upsert']);
+        Route::delete('/event-locations/{year}', [EventLocationController::class, 'destroy']);
+        
+        // Registration fees management
+        Route::post('/registration-fees/{year}', [RegistrationFeeController::class, 'store']);
+        Route::put('/registration-fees/{id}', [RegistrationFeeController::class, 'update']);
+        Route::delete('/registration-fees/{id}', [RegistrationFeeController::class, 'destroy']);
+        
+        // Contact persons management
+        Route::post('/contact-persons/{year}', [ContactPersonController::class, 'store']);
+        Route::put('/contact-persons/{id}', [ContactPersonController::class, 'update']);
+        Route::delete('/contact-persons/{id}', [ContactPersonController::class, 'destroy']);
+        
+        // User management
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
     });
 });

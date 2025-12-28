@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Conference;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 
 class ConferenceService
 {
@@ -104,9 +106,31 @@ class ConferenceService
     /**
      * Get important dates for a conference
      */
-    public function getConferenceDates(Conference $conference): Collection
+    public function getConferenceDates(Conference $conference): SupportCollection
     {
-        return $conference->importantDates;
+        $today = Carbon::now()->startOfDay();
+        
+        return $conference->importantDates->map(function ($date) use ($today) {
+            $dateValue = Carbon::parse($date->date_value)->startOfDay();
+            $daysRemaining = $today->diffInDays($dateValue, false);
+            
+            return [
+                'id' => $date->id,
+                'conference_id' => $date->conference_id,
+                'date_type' => $date->date_type,
+                'date_value' => $date->date_value,
+                'is_extended' => $date->is_extended,
+                'display_order' => $date->display_order,
+                'display_label' => $date->display_label,
+                'notes' => $date->notes,
+                'created_at' => $date->created_at,
+                'updated_at' => $date->updated_at,
+                // Computed fields for frontend
+                'is_passed' => $dateValue->isPast(),
+                'days_remaining' => (int) $daysRemaining,
+                'original_date' => null, // This would come from a separate field if tracking extensions
+            ];
+        });
     }
 
     /**
