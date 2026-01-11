@@ -331,7 +331,7 @@ class ConferenceController extends Controller
             'site_version' => '1.0',
         ]);
 
-        return ApiResponse::created($edition, 'Conference edition created successfully');
+        return ApiResponse::success($edition, 'Conference edition created successfully', [], 201);
     }
 
     /**
