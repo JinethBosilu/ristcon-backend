@@ -24,10 +24,12 @@ class PaymentInformation extends Model
         'currency',
         'additional_info',
         'display_order',
+        'is_active',
     ];
 
     protected $casts = [
         'display_order' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     public function conference(): BelongsTo

@@ -19,6 +19,7 @@ class RegistrationFee extends Model
         'early_bird_amount',
         'early_bird_deadline',
         'display_order',
+        'is_active',
     ];
 
     protected $casts = [
@@ -26,6 +27,7 @@ class RegistrationFee extends Model
         'early_bird_amount' => 'decimal:2',
         'early_bird_deadline' => 'date',
         'display_order' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     public function conference(): BelongsTo

@@ -25,6 +25,7 @@ class CommitteeMember extends Model
         'country',
         'is_international',
         'display_order',
+        'photo_path',
     ];
 
     protected $casts = [
