@@ -15,6 +15,7 @@ class ConferenceAsset extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'asset_type',
         'file_name',
         'file_path',
@@ -36,6 +37,14 @@ class ConferenceAsset extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the asset
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

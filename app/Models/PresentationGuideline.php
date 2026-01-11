@@ -14,6 +14,7 @@ class PresentationGuideline extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'presentation_type',
         'duration_minutes',
         'presentation_minutes',
@@ -41,6 +42,14 @@ class PresentationGuideline extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the guideline
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

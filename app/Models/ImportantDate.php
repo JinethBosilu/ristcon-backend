@@ -14,6 +14,7 @@ class ImportantDate extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'date_type',
         'date_value',
         'is_extended',
@@ -36,6 +37,14 @@ class ImportantDate extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the important date
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

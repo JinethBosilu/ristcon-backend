@@ -14,6 +14,7 @@ class EventLocation extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'venue_name',
         'full_address',
         'city',
@@ -37,6 +38,14 @@ class EventLocation extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the location
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

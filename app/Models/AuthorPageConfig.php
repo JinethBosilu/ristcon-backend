@@ -14,6 +14,7 @@ class AuthorPageConfig extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'conference_format',
         'cmt_url',
         'submission_email',
@@ -34,5 +35,13 @@ class AuthorPageConfig extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the configuration
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 }

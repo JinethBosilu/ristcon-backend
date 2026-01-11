@@ -12,6 +12,7 @@ class PaymentPolicy extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'policy_text',
         'policy_type',
         'is_highlighted',
@@ -26,5 +27,10 @@ class PaymentPolicy extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 }

@@ -14,6 +14,7 @@ class ContactPerson extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'full_name',
         'role',
         'department',
@@ -34,5 +35,13 @@ class ContactPerson extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the contact person
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 }

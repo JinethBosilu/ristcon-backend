@@ -461,5 +461,319 @@ class ConferenceController extends Controller
 
         return ApiResponse::success(null, 'Presentation guideline deleted successfully');
     }
+
+    // ==================== EDITION MANAGEMENT ====================
+
+    /**
+     * Create a new conference edition
+     */
+    public function storeEdition(Request $request): JsonResponse
+    {
+        $request->validate([
+            'year' => 'required|integer|unique:conference_editions,year',
+            'edition_number' => 'required|integer|min:1',
+            'name' => 'required|string|max:255',
+            'theme' => 'required|string|max:500',
+            'description' => 'nullable|string',
+            'conference_date' => 'required|date',
+            'venue_type' => 'required|string|in:physical,virtual,hybrid',
+            'venue_location' => 'nullable|string|max:500',
+            'general_email' => 'required|email',
+            'copyright_year' => 'required|integer|min:2020|max:2100',
+        ]);
+
+        // Generate slug from year
+        $slug = (string) $request->year;
+
+        $edition = \App\Models\ConferenceEdition::create([
+            'year' => $request->year,
+            'edition_number' => $request->edition_number,
+            'name' => $request->name,
+            'slug' => $slug,
+            'theme' => $request->theme,
+            'description' => $request->description,
+            'conference_date' => $request->conference_date,
+            'venue_type' => $request->venue_type,
+            'venue_location' => $request->venue_location,
+            'general_email' => $request->general_email,
+            'copyright_year' => $request->copyright_year,
+            'status' => 'draft',
+            'is_active_edition' => false,
+            'site_version' => '1.0',
+        ]);
+
+        return ApiResponse::created($edition, 'Conference edition created successfully');
+    }
+
+    /**
+     * Update a conference edition
+     */
+    public function updateEdition(Request $request, int $id): JsonResponse
+    {
+        $edition = \App\Models\ConferenceEdition::find($id);
+
+        if (!$edition) {
+            return ApiResponse::notFound("Conference edition not found");
+        }
+
+        $request->validate([
+            'year' => 'sometimes|integer|unique:conference_editions,year,' . $id,
+            'edition_number' => 'sometimes|integer|min:1',
+            'name' => 'sometimes|string|max:255',
+            'theme' => 'sometimes|string|max:500',
+            'description' => 'nullable|string',
+            'conference_date' => 'sometimes|date',
+            'venue_type' => 'sometimes|string|in:physical,virtual,hybrid',
+            'venue_location' => 'nullable|string|max:500',
+            'general_email' => 'sometimes|email',
+            'copyright_year' => 'sometimes|integer|min:2020|max:2100',
+        ]);
+
+        // Update slug if year changes
+        $data = $request->all();
+        if (isset($data['year'])) {
+            $data['slug'] = (string) $data['year'];
+        }
+
+        $edition->update($data);
+
+        return ApiResponse::success($edition, 'Conference edition updated successfully');
+    }
+
+    /**
+     * Delete a conference edition
+     */
+    public function deleteEdition(int $id): JsonResponse
+    {
+        $edition = \App\Models\ConferenceEdition::find($id);
+
+        if (!$edition) {
+            return ApiResponse::notFound("Conference edition not found");
+        }
+
+        if (!$edition->canBeDeleted()) {
+            return ApiResponse::error(
+                'Cannot delete this edition. Active and published editions cannot be deleted.',
+                400
+            );
+        }
+
+        $edition->delete();
+
+        return ApiResponse::success(null, 'Conference edition deleted successfully');
+    }
+
+    /**
+     * Mark edition as active
+     */
+    public function activateEdition(int $id): JsonResponse
+    {
+        $edition = \App\Models\ConferenceEdition::find($id);
+
+        if (!$edition) {
+            return ApiResponse::notFound("Conference edition not found");
+        }
+
+        $edition->markAsActive();
+
+        return ApiResponse::success($edition, 'Edition marked as active successfully');
+    }
+
+    /**
+     * Publish an edition
+     */
+    public function publishEdition(int $id): JsonResponse
+    {
+        $edition = \App\Models\ConferenceEdition::find($id);
+
+        if (!$edition) {
+            return ApiResponse::notFound("Conference edition not found");
+        }
+
+        $edition->publish();
+
+        return ApiResponse::success($edition, 'Edition published successfully');
+    }
+
+    /**
+     * Archive an edition
+     */
+    public function archiveEdition(int $id): JsonResponse
+    {
+        $edition = \App\Models\ConferenceEdition::find($id);
+
+        if (!$edition) {
+            return ApiResponse::notFound("Conference edition not found");
+        }
+
+        if (!$edition->archive()) {
+            return ApiResponse::error('Cannot archive active edition', 400);
+        }
+
+        return ApiResponse::success($edition, 'Edition archived successfully');
+    }
+
+    // ==================== SPEAKERS MANAGEMENT ====================
+
+    /**
+     * Get all speakers for an edition
+     */
+    public function getEditionSpeakers(int $editionId): JsonResponse
+    {
+        $edition = \App\Models\ConferenceEdition::find($editionId);
+
+        if (!$edition) {
+            return ApiResponse::notFound("Conference edition not found");
+        }
+
+        $speakers = $edition->speakers()
+            ->orderBy('display_order')
+            ->orderBy('full_name')
+            ->get();
+
+        return ApiResponse::success($speakers);
+    }
+
+    /**
+     * Create a new speaker for an edition
+     */
+    public function createSpeaker(Request $request, int $editionId): JsonResponse
+    {
+        $edition = \App\Models\ConferenceEdition::find($editionId);
+
+        if (!$edition) {
+            return ApiResponse::notFound("Conference edition not found");
+        }
+
+        $request->validate([
+            'speaker_type' => 'required|string|in:keynote,plenary,invited',
+            'full_name' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'affiliation' => 'required|string|max:255',
+            'additional_affiliation' => 'nullable|string|max:255',
+            'bio' => 'nullable|string',
+            'email' => 'nullable|email|max:255',
+            'website_url' => 'nullable|url|max:500',
+            'display_order' => 'nullable|integer|min:0',
+        ]);
+
+        $speaker = $edition->speakers()->create([
+            'conference_id' => $edition->year,
+            'edition_id' => $edition->id,
+            'speaker_type' => $request->speaker_type,
+            'full_name' => $request->full_name,
+            'title' => $request->title,
+            'affiliation' => $request->affiliation,
+            'additional_affiliation' => $request->additional_affiliation,
+            'bio' => $request->bio,
+            'email' => $request->email,
+            'website_url' => $request->website_url,
+            'display_order' => $request->display_order ?? 0,
+        ]);
+
+        return ApiResponse::created($speaker, 'Speaker created successfully');
+    }
+
+    /**
+     * Update a speaker
+     */
+    public function updateSpeaker(Request $request, int $id): JsonResponse
+    {
+        $speaker = \App\Models\Speaker::find($id);
+
+        if (!$speaker) {
+            return ApiResponse::notFound("Speaker not found");
+        }
+
+        $request->validate([
+            'speaker_type' => 'sometimes|string|in:keynote,plenary,invited',
+            'full_name' => 'sometimes|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'affiliation' => 'sometimes|string|max:255',
+            'additional_affiliation' => 'nullable|string|max:255',
+            'bio' => 'nullable|string',
+            'email' => 'nullable|email|max:255',
+            'website_url' => 'nullable|url|max:500',
+            'display_order' => 'nullable|integer|min:0',
+        ]);
+
+        $speaker->update($request->all());
+
+        return ApiResponse::success($speaker, 'Speaker updated successfully');
+    }
+
+    /**
+     * Delete a speaker
+     */
+    public function deleteSpeaker(int $id): JsonResponse
+    {
+        $speaker = \App\Models\Speaker::find($id);
+
+        if (!$speaker) {
+            return ApiResponse::notFound("Speaker not found");
+        }
+
+        // Delete photo if exists
+        if ($speaker->photo_filename) {
+            \Storage::disk('public')->delete('speakers/' . $speaker->photo_filename);
+        }
+
+        $speaker->delete();
+
+        return ApiResponse::success(null, 'Speaker deleted successfully');
+    }
+
+    /**
+     * Upload speaker photo
+     */
+    public function uploadSpeakerPhoto(Request $request, int $id): JsonResponse
+    {
+        $speaker = \App\Models\Speaker::find($id);
+
+        if (!$speaker) {
+            return ApiResponse::notFound("Speaker not found");
+        }
+
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,jpg,png|max:5120', // Max 5MB
+        ]);
+
+        // Delete old photo if exists
+        if ($speaker->photo_filename) {
+            \Storage::disk('public')->delete('speakers/' . $speaker->photo_filename);
+        }
+
+        // Store new photo
+        $file = $request->file('photo');
+        $filename = time() . '_' . $speaker->id . '.' . $file->getClientOriginalExtension();
+        $file->storeAs('speakers', $filename, 'public');
+
+        $speaker->update(['photo_filename' => $filename]);
+
+        return ApiResponse::success($speaker, 'Speaker photo uploaded successfully');
+    }
+
+    /**
+     * Delete speaker photo
+     */
+    public function deleteSpeakerPhoto(int $id): JsonResponse
+    {
+        $speaker = \App\Models\Speaker::find($id);
+
+        if (!$speaker) {
+            return ApiResponse::notFound("Speaker not found");
+        }
+
+        if (!$speaker->photo_filename) {
+            return ApiResponse::error('Speaker has no photo', 400);
+        }
+
+        // Delete photo file
+        \Storage::disk('public')->delete('speakers/' . $speaker->photo_filename);
+
+        $speaker->update(['photo_filename' => null]);
+
+        return ApiResponse::success($speaker, 'Speaker photo deleted successfully');
+    }
 }
 

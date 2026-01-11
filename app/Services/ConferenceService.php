@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Conference;
+use App\Models\ConferenceEdition;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -10,6 +11,18 @@ use Illuminate\Support\Collection as SupportCollection;
 
 class ConferenceService
 {
+    /**
+     * Edition service for resolving conference editions
+     */
+    protected EditionService $editionService;
+
+    /**
+     * Constructor
+     */
+    public function __construct(EditionService $editionService)
+    {
+        $this->editionService = $editionService;
+    }
     /**
      * Relation mapping for API includes
      */
@@ -30,11 +43,11 @@ class ConferenceService
     ];
 
     /**
-     * Build query with filters and relations
+     * Build query with filters and relations for ConferenceEdition
      */
     public function buildQuery(array $filters = [], ?string $includeString = null): Builder
     {
-        $query = Conference::query();
+        $query = ConferenceEdition::query();
 
         // Apply filters
         if (isset($filters['status'])) {
@@ -61,6 +74,7 @@ class ConferenceService
 
     /**
      * Get all conferences with optional filters
+     * Returns ConferenceEdition objects formatted as Conference for backward compatibility
      */
     public function getAllConferences(array $filters = [], ?string $includeString = null): Collection
     {
@@ -71,10 +85,11 @@ class ConferenceService
 
     /**
      * Get conference by year
+     * Returns ConferenceEdition formatted as Conference for backward compatibility
      */
-    public function getConferenceByYear(int $year, ?string $includeString = null): ?Conference
+    public function getConferenceByYear(int $year, ?string $includeString = null): ?ConferenceEdition
     {
-        $query = Conference::where('year', $year);
+        $query = ConferenceEdition::where('year', $year);
 
         if ($includeString) {
             $includes = explode(',', $includeString);
@@ -90,9 +105,9 @@ class ConferenceService
     }
 
     /**
-     * Get speakers for a conference
+     * Get speakers for a conference edition
      */
-    public function getConferenceSpeakers(Conference $conference, ?string $type = null): Collection
+    public function getConferenceSpeakers($conference, ?string $type = null): Collection
     {
         $query = $conference->speakers();
 
@@ -104,19 +119,19 @@ class ConferenceService
     }
 
     /**
-     * Get important dates for a conference
+     * Get important dates for a conference edition
      */
-    public function getConferenceDates(Conference $conference): SupportCollection
+    public function getConferenceDates($conference): SupportCollection
     {
         $today = Carbon::now()->startOfDay();
         
-        return $conference->importantDates->map(function ($date) use ($today) {
+        return $conference->importantDates->map(function ($date) use ($today, $conference) {
             $dateValue = Carbon::parse($date->date_value)->startOfDay();
             $daysRemaining = $today->diffInDays($dateValue, false);
             
             return [
                 'id' => $date->id,
-                'conference_id' => $date->conference_id,
+                'conference_id' => $date->conference_id ?? $conference->id, // Backward compatibility
                 'date_type' => $date->date_type,
                 'date_value' => $date->date_value,
                 'is_extended' => $date->is_extended,
@@ -134,9 +149,9 @@ class ConferenceService
     }
 
     /**
-     * Get committee members for a conference
+     * Get committee members for a conference edition
      */
-    public function getConferenceCommittees(Conference $conference, ?string $type = null): Collection
+    public function getConferenceCommittees($conference, ?string $type = null): Collection
     {
         $query = $conference->committeeMembers()->with('committeeType');
 
@@ -150,22 +165,22 @@ class ConferenceService
     }
 
     /**
-     * Get contact persons for a conference
+     * Get contact persons for a conference edition
      */
-    public function getConferenceContacts(Conference $conference): Collection
+    public function getConferenceContacts($conference): Collection
     {
         return $conference->contactPersons;
     }
 
     /**
-     * Get documents for a conference
+     * Get documents for a conference edition
      */
-    public function getConferenceDocuments(Conference $conference, ?string $category = null, ?bool $active = null): Collection
+    public function getConferenceDocuments($conference, ?string $category = null, ?bool $active = null): Collection
     {
         $query = $conference->documents();
 
         if ($category) {
-            $query->byCategory($category);
+            $query->where('document_category', $category);
         }
 
         if ($active !== null) {
@@ -176,30 +191,30 @@ class ConferenceService
     }
 
     /**
-     * Get research areas for a conference
+     * Get research areas for a conference edition
      */
-    public function getConferenceResearchAreas(Conference $conference): Collection
+    public function getConferenceResearchAreas($conference): Collection
     {
         return $conference->researchCategories()
             ->with('researchAreas')
-            ->active()
+            ->where('is_active', true)
             ->get();
     }
 
     /**
-     * Get event location for a conference
+     * Get event location for a conference edition
      */
-    public function getConferenceLocation(Conference $conference)
+    public function getConferenceLocation($conference)
     {
         return $conference->eventLocation;
     }
 
     /**
-     * Get author instructions for a conference
+     * Get author instructions for a conference by year
      */
     public function getAuthorInstructions(int $year): array
     {
-        $conference = Conference::where('year', $year)
+        $conference = ConferenceEdition::where('year', $year)
             ->with([
                 'authorPageConfig',
                 'submissionMethods',

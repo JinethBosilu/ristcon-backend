@@ -12,6 +12,7 @@ class PaymentInformation extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'payment_type',
         'beneficiary_name',
         'bank_name',
@@ -32,5 +33,10 @@ class PaymentInformation extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 }

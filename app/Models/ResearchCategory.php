@@ -15,6 +15,7 @@ class ResearchCategory extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'category_code',
         'category_name',
         'description',
@@ -33,6 +34,14 @@ class ResearchCategory extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the category
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

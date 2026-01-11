@@ -14,6 +14,7 @@ class CommitteeMember extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'committee_type_id',
         'full_name',
         'designation',
@@ -37,6 +38,14 @@ class CommitteeMember extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the committee member
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

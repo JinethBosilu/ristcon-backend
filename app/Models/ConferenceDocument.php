@@ -15,6 +15,7 @@ class ConferenceDocument extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'document_category',
         'file_name',
         'file_path',
@@ -41,6 +42,14 @@ class ConferenceDocument extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the document
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

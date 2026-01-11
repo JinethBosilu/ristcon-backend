@@ -12,6 +12,7 @@ class RegistrationFee extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'attendee_type',
         'currency',
         'amount',
@@ -30,5 +31,10 @@ class RegistrationFee extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 }

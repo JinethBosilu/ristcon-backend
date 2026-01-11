@@ -54,6 +54,22 @@ Route::prefix('v1')->group(function () {
     // Admin routes (protected by Sanctum authentication)
     Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
         
+        // Edition management
+        Route::post('/editions', [ConferenceController::class, 'storeEdition']);
+        Route::put('/editions/{id}', [ConferenceController::class, 'updateEdition']);
+        Route::delete('/editions/{id}', [ConferenceController::class, 'deleteEdition']);
+        Route::post('/editions/{id}/activate', [ConferenceController::class, 'activateEdition']);
+        Route::post('/editions/{id}/publish', [ConferenceController::class, 'publishEdition']);
+        Route::post('/editions/{id}/archive', [ConferenceController::class, 'archiveEdition']);
+        
+        // Speakers management (edition-based)
+        Route::get('/editions/{editionId}/speakers', [ConferenceController::class, 'getEditionSpeakers']);
+        Route::post('/editions/{editionId}/speakers', [ConferenceController::class, 'createSpeaker']);
+        Route::put('/speakers/{id}', [ConferenceController::class, 'updateSpeaker']);
+        Route::delete('/speakers/{id}', [ConferenceController::class, 'deleteSpeaker']);
+        Route::post('/speakers/{id}/photo', [ConferenceController::class, 'uploadSpeakerPhoto']);
+        Route::delete('/speakers/{id}/photo', [ConferenceController::class, 'deleteSpeakerPhoto']);
+        
         // Conference management
         Route::post('/conferences', [ConferenceController::class, 'store']);
         Route::put('/conferences/{year}', [ConferenceController::class, 'update']);

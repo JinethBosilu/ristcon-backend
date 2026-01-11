@@ -12,6 +12,7 @@ class AbstractFormat extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'format_type',
         'max_title_characters',
         'title_font_name',
@@ -50,6 +51,14 @@ class AbstractFormat extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class);
+    }
+
+    /**
+     * Get the edition that owns the abstract format
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

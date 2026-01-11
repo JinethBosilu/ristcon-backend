@@ -15,6 +15,7 @@ class Speaker extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'speaker_type',
         'display_order',
         'full_name',
@@ -39,6 +40,14 @@ class Speaker extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id', 'id');
+    }
+
+    /**
+     * Get the edition that owns the speaker
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

@@ -21,9 +21,13 @@ return [
 
     'allowed_origins' => [
         'http://localhost:3000',
+        'http://localhost:5173',  // Admin panel
         'http://localhost:8080',
+        'http://localhost:8081',  // Public frontend
         'http://127.0.0.1:3000',
+        'http://127.0.0.1:5173',  // Admin panel
         'http://127.0.0.1:8080',
+        'http://127.0.0.1:8081',  // Public frontend
     ],
 
     'allowed_origins_patterns' => [],

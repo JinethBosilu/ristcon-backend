@@ -11,6 +11,7 @@ class SocialMediaLink extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'platform',
         'url',
         'label',
@@ -29,6 +30,14 @@ class SocialMediaLink extends Model
     public function conference()
     {
         return $this->belongsTo(Conference::class);
+    }
+
+    /**
+     * Get the edition that owns the social media link.
+     */
+    public function edition()
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**
