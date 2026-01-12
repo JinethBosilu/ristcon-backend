@@ -8,6 +8,7 @@ use App\Http\Responses\ApiResponse;
 use App\Services\ConferenceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ConferenceController extends Controller
 {
@@ -294,12 +295,16 @@ class ConferenceController extends Controller
     // ==================== EDITION MANAGEMENT ====================
 
     /**
-     * Create a new conference edition
+     * Create a new conference edition by cloning from active edition
      */
     public function storeEdition(Request $request): JsonResponse
     {
         $request->validate([
-            'year' => 'required|integer|unique:conference_editions,year',
+            'year' => [
+                'required',
+                'integer',
+                Rule::unique('conference_editions', 'year')->whereNull('deleted_at')
+            ],
             'edition_number' => 'required|integer|min:1',
             'name' => 'required|string|max:255',
             'theme' => 'required|string|max:500',
@@ -311,27 +316,340 @@ class ConferenceController extends Controller
             'copyright_year' => 'required|integer|min:2020|max:2100',
         ]);
 
-        // Generate slug from year
-        $slug = (string) $request->year;
+        try {
+            // Wrap in transaction to ensure all-or-nothing operation
+            $edition = \DB::transaction(function () use ($request) {
+                // Generate slug from year
+                $slug = (string) $request->year;
 
-        $edition = \App\Models\ConferenceEdition::create([
-            'year' => $request->year,
-            'edition_number' => $request->edition_number,
-            'name' => $request->name,
-            'slug' => $slug,
-            'theme' => $request->theme,
-            'description' => $request->description,
-            'conference_date' => $request->conference_date,
-            'venue_type' => $request->venue_type,
-            'venue_location' => $request->venue_location,
-            'general_email' => $request->general_email,
-            'copyright_year' => $request->copyright_year,
-            'status' => 'draft',
-            'is_active_edition' => false,
-            'site_version' => '1.0',
-        ]);
+                // Create the new edition
+                $edition = \App\Models\ConferenceEdition::create([
+                    'year' => $request->year,
+                    'edition_number' => $request->edition_number,
+                    'name' => $request->name,
+                    'slug' => $slug,
+                    'theme' => $request->theme,
+                    'description' => $request->description,
+                    'conference_date' => $request->conference_date,
+                    'venue_type' => $request->venue_type,
+                    'venue_location' => $request->venue_location,
+                    'general_email' => $request->general_email,
+                    'copyright_year' => $request->copyright_year,
+                    'status' => 'draft',
+                    'is_active_edition' => false,
+                    'site_version' => '1.0',
+                ]);
 
-        return ApiResponse::success($edition, 'Conference edition created successfully', [], 201);
+                // Find the currently active edition to clone from
+                $activeEdition = \App\Models\ConferenceEdition::where('is_active_edition', true)->first();
+
+                if ($activeEdition) {
+                    // Clone all related data from active edition
+                    $this->cloneEditionData($activeEdition, $edition);
+                } else {
+                    // If no active edition exists, create default data
+                    $this->createDefaultData($edition, $request->conference_date);
+                }
+
+                return $edition;
+            });
+
+            $activeEdition = \App\Models\ConferenceEdition::where('is_active_edition', true)->first();
+            $message = $activeEdition 
+                ? 'Conference edition created successfully by cloning from ' . $activeEdition->name
+                : 'Conference edition created successfully with default data';
+
+            return ApiResponse::success($edition, $message, [], 201);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to create conference edition: ' . $e->getMessage(), [
+                'year' => $request->year,
+                'exception' => $e,
+            ]);
+            
+            return ApiResponse::error(
+                'Failed to create conference edition: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    /**
+     * Clone all related data from source edition to target edition
+     */
+    private function cloneEditionData($sourceEdition, $targetEdition): void
+    {
+        $newEditionId = $targetEdition->id;  // Primary key is 'id', not 'edition_id'
+        $newConferenceDate = $targetEdition->conference_date;
+        
+        // Get legacy conference_id (for backward compatibility with old schema)
+        $conferenceId = \App\Models\Conference::first()->id ?? 1;
+
+        // Clone important dates (set all to new conference_date)
+        foreach ($sourceEdition->importantDates as $date) {
+            \App\Models\ImportantDate::create([
+                'conference_id' => $conferenceId,  // Legacy column for backward compatibility
+                'edition_id' => $newEditionId,
+                'date_type' => $date->date_type,
+                'display_label' => $date->display_label,  // Fixed: was date_label
+                'date_value' => $newConferenceDate,
+                'notes' => $date->notes,
+                'display_order' => $date->display_order,
+            ]);
+        }
+
+        // Clone speakers
+        foreach ($sourceEdition->speakers as $speaker) {
+            \App\Models\Speaker::create([
+                'conference_id' => $conferenceId,  // Legacy column for backward compatibility
+                'edition_id' => $newEditionId,
+                'full_name' => $speaker->full_name,
+                'title' => $speaker->title,
+                'affiliation' => $speaker->affiliation,
+                'additional_affiliation' => $speaker->additional_affiliation,
+                'bio' => $speaker->bio,
+                'photo_filename' => $speaker->photo_filename,
+                'website_url' => $speaker->website_url,
+                'email' => $speaker->email,
+                'speaker_type' => $speaker->speaker_type,
+                'display_order' => $speaker->display_order,
+            ]);
+        }
+
+        // Clone committees
+        foreach ($sourceEdition->committeeMembers as $committee) {
+            \App\Models\CommitteeMember::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'committee_type_id' => $committee->committee_type_id,
+                'full_name' => $committee->full_name,
+                'designation' => $committee->designation,
+                'department' => $committee->department,
+                'role' => $committee->role,
+                'role_category' => $committee->role_category,
+                'affiliation' => $committee->affiliation,
+                'country' => $committee->country,
+                'is_international' => $committee->is_international,
+                'display_order' => $committee->display_order,
+            ]);
+        }
+
+        // Clone research categories
+        foreach ($sourceEdition->researchCategories as $category) {
+            $newCategory = \App\Models\ResearchCategory::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'category_name' => $category->category_name,
+                'category_code' => $category->category_code,
+                'description' => $category->description,
+                'display_order' => $category->display_order,
+            ]);
+
+            // Clone research areas for this category
+            foreach ($category->researchAreas as $area) {
+                \App\Models\ResearchArea::create([
+                    'conference_id' => $conferenceId,
+                    'edition_id' => $newEditionId,
+                    'category_id' => $newCategory->id,
+                    'area_name' => $area->area_name,
+                    'description' => $area->description,
+                    'display_order' => $area->display_order,
+                ]);
+            }
+        }
+
+        // Clone contacts
+        foreach ($sourceEdition->contactPersons as $contact) {
+            \App\Models\ContactPerson::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'full_name' => $contact->full_name,
+                'role' => $contact->role,
+                'department' => $contact->department,
+                'mobile' => $contact->mobile,
+                'phone' => $contact->phone,
+                'email' => $contact->email,
+                'address' => $contact->address,
+                'display_order' => $contact->display_order,
+            ]);
+        }
+
+        // Clone social media links
+        foreach ($sourceEdition->socialMediaLinks as $link) {
+            \App\Models\SocialMediaLink::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'platform' => $link->platform,
+                'url' => $link->url,
+                'display_order' => $link->display_order,
+            ]);
+        }
+
+        // Clone location
+        if ($sourceEdition->eventLocation) {
+            \App\Models\EventLocation::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'venue_name' => $sourceEdition->eventLocation->venue_name,
+                'full_address' => $sourceEdition->eventLocation->full_address,
+                'city' => $sourceEdition->eventLocation->city,
+                'country' => $sourceEdition->eventLocation->country,
+                'latitude' => $sourceEdition->eventLocation->latitude,
+                'longitude' => $sourceEdition->eventLocation->longitude,
+                'google_maps_embed_url' => $sourceEdition->eventLocation->google_maps_embed_url,
+                'google_maps_link' => $sourceEdition->eventLocation->google_maps_link,
+                'is_virtual' => $sourceEdition->eventLocation->is_virtual,
+            ]);
+        }
+
+        // Clone author instructions
+        if ($sourceEdition->authorPageConfig) {
+            \App\Models\AuthorPageConfig::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'conference_format' => $sourceEdition->authorPageConfig->conference_format,
+                'cmt_url' => $sourceEdition->authorPageConfig->cmt_url,
+                'submission_email' => $sourceEdition->authorPageConfig->submission_email,
+                'blind_review_enabled' => $sourceEdition->authorPageConfig->blind_review_enabled,
+                'camera_ready_required' => $sourceEdition->authorPageConfig->camera_ready_required,
+                'special_instructions' => $sourceEdition->authorPageConfig->special_instructions,
+                'acknowledgment_text' => $sourceEdition->authorPageConfig->acknowledgment_text,
+            ]);
+        }
+
+        // Clone submission methods
+        foreach ($sourceEdition->submissionMethods as $method) {
+            \App\Models\SubmissionMethod::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'document_type' => $method->document_type,
+                'submission_method' => $method->submission_method,
+                'email_address' => $method->email_address,
+                'notes' => $method->notes,
+                'display_order' => $method->display_order,
+            ]);
+        }
+
+        // Clone presentation guidelines
+        foreach ($sourceEdition->presentationGuidelines as $guideline) {
+            \App\Models\PresentationGuideline::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'presentation_type' => $guideline->presentation_type,
+                'duration_minutes' => $guideline->duration_minutes,
+                'presentation_minutes' => $guideline->presentation_minutes,
+                'qa_minutes' => $guideline->qa_minutes,
+                'poster_width' => $guideline->poster_width,
+                'poster_height' => $guideline->poster_height,
+                'poster_unit' => $guideline->poster_unit,
+                'poster_orientation' => $guideline->poster_orientation,
+                'physical_presence_required' => $guideline->physical_presence_required,
+                'detailed_requirements' => $guideline->detailed_requirements,
+                'display_order' => $guideline->display_order,
+            ]);
+        }
+
+        // Clone payment policies
+        foreach ($sourceEdition->paymentPolicies as $policy) {
+            \App\Models\PaymentPolicy::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'policy_type' => $policy->policy_type,
+                'policy_text' => $policy->policy_text,
+                'display_order' => $policy->display_order,
+            ]);
+        }
+
+        // Clone registration fees
+        foreach ($sourceEdition->registrationFees as $fee) {
+            \App\Models\RegistrationFee::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'attendee_type' => $fee->attendee_type,
+                'currency' => $fee->currency,
+                'amount' => $fee->amount,
+                'early_bird_amount' => $fee->early_bird_amount,
+                'early_bird_deadline' => $fee->early_bird_deadline,
+                'is_active' => $fee->is_active,
+                'display_order' => $fee->display_order,
+            ]);
+        }
+
+        // Clone payment information
+        foreach ($sourceEdition->paymentInformation as $payment) {
+            \App\Models\PaymentInformation::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'payment_type' => $payment->payment_type,
+                'bank_name' => $payment->bank_name,
+                'account_name' => $payment->account_name,
+                'account_number' => $payment->account_number,
+                'swift_code' => $payment->swift_code,
+                'iban' => $payment->iban,
+                'branch_name' => $payment->branch_name,
+                'branch_code' => $payment->branch_code,
+                'additional_info' => $payment->additional_info,
+                'display_order' => $payment->display_order,
+            ]);
+        }
+
+        // Clone abstract formats
+        foreach ($sourceEdition->abstractFormats as $format) {
+            \App\Models\AbstractFormat::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $newEditionId,
+                'format_type' => $format->format_type,
+                'max_title_characters' => $format->max_title_characters,
+                'title_font_name' => $format->title_font_name,
+                'title_font_size' => $format->title_font_size,
+                'title_style' => $format->title_style,
+                'max_body_words' => $format->max_body_words,
+                'body_font_name' => $format->body_font_name,
+                'body_font_size' => $format->body_font_size,
+                'body_line_spacing' => $format->body_line_spacing,
+                'max_keywords' => $format->max_keywords,
+                'keywords_font_name' => $format->keywords_font_name,
+                'keywords_font_size' => $format->keywords_font_size,
+                'keywords_style' => $format->keywords_style,
+                'max_references' => $format->max_references,
+                'sections' => $format->sections,
+                'additional_notes' => $format->additional_notes,
+                'display_order' => $format->display_order,
+            ]);
+        }
+
+        // Note: We intentionally DO NOT clone documents and assets 
+        // because file paths would be invalid. Admins will upload new files.
+    }
+
+    /**
+     * Create default data when no active edition exists to clone from
+     */
+    private function createDefaultData($edition, $conferenceDate): void
+    {
+        // Get legacy conference_id
+        $conferenceId = \App\Models\Conference::first()->id ?? 1;
+        
+        $defaultDates = [
+            ['date_type' => 'submission_deadline', 'display_label' => 'Abstract Submission Deadline', 'display_order' => 1],
+            ['date_type' => 'notification', 'display_label' => 'Notification of Acceptance', 'display_order' => 2],
+            ['date_type' => 'camera_ready', 'display_label' => 'Camera-Ready Submission', 'display_order' => 3],
+            ['date_type' => 'conference_date', 'display_label' => 'Conference Date', 'display_order' => 4],
+            ['date_type' => 'registration_deadline', 'display_label' => 'Registration Deadline', 'display_order' => 5],
+            ['date_type' => 'other', 'display_label' => 'Early Bird Deadline', 'display_order' => 6],
+            ['date_type' => 'other', 'display_label' => 'Late Registration', 'display_order' => 7],
+        ];
+
+        foreach ($defaultDates as $dateData) {
+            \App\Models\ImportantDate::create([
+                'conference_id' => $conferenceId,
+                'edition_id' => $edition->id,  // Primary key is 'id', not 'edition_id'
+                'date_type' => $dateData['date_type'],
+                'display_label' => $dateData['display_label'],
+                'date_value' => $conferenceDate,
+                'display_order' => $dateData['display_order'],
+            ]);
+        }
     }
 
     /**
@@ -387,9 +705,23 @@ class ConferenceController extends Controller
             );
         }
 
-        $edition->delete();
-
-        return ApiResponse::success(null, 'Conference edition deleted successfully');
+        try {
+            // Perform hard delete (cascade will remove all related records)
+            $edition->forceDelete();
+            
+            return ApiResponse::success(null, 'Conference edition deleted permanently');
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete conference edition: ' . $e->getMessage(), [
+                'edition_id' => $id,
+                'exception' => $e,
+            ]);
+            
+            return ApiResponse::error(
+                'Failed to delete conference edition: ' . $e->getMessage(),
+                500
+            );
+        }
     }
 
     /**

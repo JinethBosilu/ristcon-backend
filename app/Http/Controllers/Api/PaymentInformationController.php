@@ -18,7 +18,7 @@ class PaymentInformationController extends Controller
     {
         $year = $request->query('year', date('Y'));
         
-        $paymentInfo = PaymentInformation::whereHas('conference', function ($query) use ($year) {
+        $paymentInfo = PaymentInformation::whereHas('edition', function ($query) use ($year) {
             $query->where('year', $year);
         })
         ->orderBy('display_order')

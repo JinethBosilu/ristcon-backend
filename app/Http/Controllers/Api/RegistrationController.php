@@ -19,13 +19,13 @@ class RegistrationController extends Controller
     {
         $year = $request->query('year', date('Y'));
         
-        $fees = RegistrationFee::whereHas('conference', function ($query) use ($year) {
+        $fees = RegistrationFee::whereHas('edition', function ($query) use ($year) {
             $query->where('year', $year);
         })
         ->orderBy('display_order')
         ->get();
 
-        $policies = PaymentPolicy::whereHas('conference', function ($query) use ($year) {
+        $policies = PaymentPolicy::whereHas('edition', function ($query) use ($year) {
             $query->where('year', $year);
         })
         ->orderBy('display_order')
@@ -44,7 +44,7 @@ class RegistrationController extends Controller
     {
         $year = $request->query('year', date('Y'));
         
-        $fees = RegistrationFee::whereHas('conference', function ($query) use ($year) {
+        $fees = RegistrationFee::whereHas('edition', function ($query) use ($year) {
             $query->where('year', $year);
         })
         ->orderBy('display_order')
@@ -60,7 +60,7 @@ class RegistrationController extends Controller
     {
         $year = $request->query('year', date('Y'));
         
-        $policies = PaymentPolicy::whereHas('conference', function ($query) use ($year) {
+        $policies = PaymentPolicy::whereHas('edition', function ($query) use ($year) {
             $query->where('year', $year);
         })
         ->orderBy('display_order')

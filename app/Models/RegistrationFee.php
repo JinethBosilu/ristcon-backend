@@ -30,6 +30,16 @@ class RegistrationFee extends Model
         'is_active' => 'boolean',
     ];
 
+    protected $appends = ['id'];
+
+    /**
+     * Get the id attribute (alias for fee_id for API compatibility)
+     */
+    public function getIdAttribute()
+    {
+        return $this->fee_id;
+    }
+
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
