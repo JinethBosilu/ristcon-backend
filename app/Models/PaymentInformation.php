@@ -32,6 +32,13 @@ class PaymentInformation extends Model
         'is_active' => 'boolean',
     ];
 
+    protected $appends = ['id'];
+
+    public function getIdAttribute(): int
+    {
+        return $this->payment_id;
+    }
+
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');

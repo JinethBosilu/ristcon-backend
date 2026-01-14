@@ -108,6 +108,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/assets/{id}', [ConferenceController::class, 'updateAsset']);
         Route::delete('/assets/{id}', [ConferenceController::class, 'deleteAsset']);
         Route::post('/assets/{id}/upload', [ConferenceController::class, 'uploadAssetFile']);
+        Route::delete('/assets/{id}/file', [ConferenceController::class, 'deleteAssetFile']);
         
         // Event Locations management
         Route::get('/editions/{editionId}/locations', [ConferenceController::class, 'getEditionLocations']);

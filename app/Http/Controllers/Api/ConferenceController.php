@@ -980,7 +980,6 @@ class ConferenceController extends Controller
             'date_type' => 'required|string|in:submission_deadline,notification,camera_ready,conference_date,registration_deadline,other',
             'date_value' => 'required|date',
             'is_extended' => 'nullable|boolean',
-            'original_date' => 'nullable|date',
             'display_label' => 'required|string|max:255',
             'notes' => 'nullable|string',
             'display_order' => 'nullable|integer|min:0',
@@ -992,7 +991,6 @@ class ConferenceController extends Controller
             'date_type' => $request->date_type,
             'date_value' => $request->date_value,
             'is_extended' => $request->is_extended ?? false,
-            'original_date' => $request->original_date,
             'display_label' => $request->display_label,
             'notes' => $request->notes,
             'display_order' => $request->display_order ?? 0,
@@ -1016,13 +1014,19 @@ class ConferenceController extends Controller
             'date_type' => 'sometimes|string|in:submission_deadline,notification,camera_ready,conference_date,registration_deadline,other',
             'date_value' => 'sometimes|date',
             'is_extended' => 'nullable|boolean',
-            'original_date' => 'nullable|date',
             'display_label' => 'sometimes|string|max:255',
             'notes' => 'nullable|string',
             'display_order' => 'nullable|integer|min:0',
         ]);
 
-        $date->update($request->all());
+        $date->update($request->only([
+            'date_type',
+            'date_value',
+            'is_extended',
+            'display_label',
+            'notes',
+            'display_order',
+        ]));
 
         return ApiResponse::success($date, 'Important date updated successfully');
     }
@@ -1232,19 +1236,16 @@ class ConferenceController extends Controller
             'department' => 'nullable|string|max:255',
             'affiliation' => 'required|string|max:255',
             'role' => 'required|string|max:255',
-            'role_category' => 'nullable|string|max:255',
-            'country' => 'nullable|string|max:255',
-            'is_international' => 'boolean',
             'display_order' => 'integer|min:0',
         ]);
 
         $validated['edition_id'] = $editionId;
-        $validated['conference_id'] = $edition->conference_id;
+        $validated['conference_id'] = 1; // Legacy field - always 1 for RISTCON
 
         $member = \App\Models\CommitteeMember::create($validated);
         $member->load('committeeType');
 
-        return ApiResponse::success($member, 'Committee member created successfully', 201);
+        return ApiResponse::success($member, 'Committee member created successfully', [], 201);
     }
 
     /**
@@ -1265,9 +1266,6 @@ class ConferenceController extends Controller
             'department' => 'nullable|string|max:255',
             'affiliation' => 'sometimes|required|string|max:255',
             'role' => 'sometimes|required|string|max:255',
-            'role_category' => 'nullable|string|max:255',
-            'country' => 'nullable|string|max:255',
-            'is_international' => 'boolean',
             'display_order' => 'integer|min:0',
         ]);
 
@@ -1397,11 +1395,11 @@ class ConferenceController extends Controller
         ]);
 
         $validated['edition_id'] = $editionId;
-        $validated['conference_id'] = $edition->conference_id;
+        $validated['conference_id'] = 1; // Legacy field - always 1 for RISTCON
 
         $category = \App\Models\ResearchCategory::create($validated);
 
-        return ApiResponse::success($category, 'Research category created successfully', 201);
+        return ApiResponse::success($category, 'Research category created successfully', [], 201);
     }
 
     /**
@@ -1484,7 +1482,7 @@ class ConferenceController extends Controller
 
         $area = \App\Models\ResearchArea::create($validated);
 
-        return ApiResponse::success($area, 'Research area created successfully', 201);
+        return ApiResponse::success($area, 'Research area created successfully', [], 201);
     }
 
     /**
@@ -1580,7 +1578,7 @@ class ConferenceController extends Controller
             'file_size' => $file->getSize(),
         ]);
 
-        return ApiResponse::success($asset, 'Asset created successfully', 201);
+        return ApiResponse::success($asset, 'Asset created successfully', [], 201);
     }
 
     /**
@@ -1659,6 +1657,32 @@ class ConferenceController extends Controller
         ]);
 
         return ApiResponse::success($asset, 'Asset file uploaded successfully');
+    }
+
+    /**
+     * Delete asset file (keep metadata)
+     */
+    public function deleteAssetFile(int $id): JsonResponse
+    {
+        $asset = \App\Models\ConferenceAsset::find($id);
+
+        if (!$asset) {
+            return ApiResponse::notFound("Asset not found");
+        }
+
+        // Delete file from storage
+        if ($asset->file_path) {
+            \Storage::disk('public')->delete($asset->file_path);
+        }
+
+        // Clear file-related fields but keep the asset record
+        $asset->update([
+            'file_path' => '',
+            'mime_type' => '',
+            'file_size' => 0,
+        ]);
+
+        return ApiResponse::success($asset, 'Asset file deleted successfully');
     }
 
     // ==================== Event Locations Management ====================
@@ -1749,9 +1773,10 @@ class ConferenceController extends Controller
         ]);
 
         $validated['edition_id'] = $editionId;
+        $validated['conference_id'] = 1; // Legacy field - always 1 for RISTCON
         $contact = \App\Models\ContactPerson::create($validated);
 
-        return ApiResponse::success($contact, 'Contact created successfully', 201);
+        return ApiResponse::success($contact, 'Contact created successfully', [], 201);
     }
 
     public function updateContact(Request $request, int $id): JsonResponse
@@ -1808,9 +1833,11 @@ class ConferenceController extends Controller
         ]);
 
         $validated['edition_id'] = $editionId;
+        $validated['conference_id'] = 1; // Legacy field - always 1 for RISTCON
+        $validated['label'] = $validated['label'] ?? ''; // Default to empty string if not provided
         $socialMedia = \App\Models\SocialMediaLink::create($validated);
 
-        return ApiResponse::success($socialMedia, 'Social media link created successfully', 201);
+        return ApiResponse::success($socialMedia, 'Social media link created successfully', [], 201);
     }
 
     public function updateSocialMedia(Request $request, int $id): JsonResponse
@@ -1931,9 +1958,10 @@ class ConferenceController extends Controller
         ]);
 
         $validated['edition_id'] = $editionId;
+        $validated['conference_id'] = 1; // Legacy field - always 1 for RISTCON
         $paymentInfo = \App\Models\PaymentInformation::create($validated);
 
-        return ApiResponse::success($paymentInfo, 'Payment information created successfully', 201);
+        return ApiResponse::success($paymentInfo, 'Payment information created successfully', [], 201);
     }
 
     public function updatePaymentInfo(Request $request, int $id): JsonResponse
