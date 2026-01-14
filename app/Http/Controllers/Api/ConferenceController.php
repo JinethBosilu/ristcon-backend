@@ -819,7 +819,7 @@ class ConferenceController extends Controller
         ]);
 
         $speaker = $edition->speakers()->create([
-            'conference_id' => $edition->year,
+            'conference_id' => 1, // Legacy field - always 1 for RISTCON
             'edition_id' => $edition->id,
             'speaker_type' => $request->speaker_type,
             'full_name' => $request->full_name,
@@ -832,7 +832,7 @@ class ConferenceController extends Controller
             'display_order' => $request->display_order ?? 0,
         ]);
 
-        return ApiResponse::created($speaker, 'Speaker created successfully');
+        return ApiResponse::success($speaker, 'Speaker created successfully', [], 201);
     }
 
     /**
@@ -889,6 +889,13 @@ class ConferenceController extends Controller
      */
     public function uploadSpeakerPhoto(Request $request, int $id): JsonResponse
     {
+        \Log::info('Upload speaker photo request received', [
+            'speaker_id' => $id,
+            'has_file' => $request->hasFile('photo'),
+            'file_valid' => $request->hasFile('photo') ? $request->file('photo')->isValid() : false,
+            'all_data' => $request->all(),
+        ]);
+
         $speaker = \App\Models\Speaker::find($id);
 
         if (!$speaker) {
@@ -980,7 +987,7 @@ class ConferenceController extends Controller
         ]);
 
         $date = $edition->importantDates()->create([
-            'conference_id' => $edition->year,
+            'conference_id' => 1, // Legacy field - always 1 for RISTCON
             'edition_id' => $edition->id,
             'date_type' => $request->date_type,
             'date_value' => $request->date_value,
@@ -991,7 +998,7 @@ class ConferenceController extends Controller
             'display_order' => $request->display_order ?? 0,
         ]);
 
-        return ApiResponse::created($date, 'Important date created successfully');
+        return ApiResponse::success($date, 'Important date created successfully', [], 201);
     }
 
     /**
@@ -1083,7 +1090,7 @@ class ConferenceController extends Controller
         $filePath = $file->storeAs('documents', $fileName, 'public');
 
         $document = $edition->documents()->create([
-            'conference_id' => $edition->year,
+            'conference_id' => 1, // Legacy field - always 1 for RISTCON
             'edition_id' => $edition->id,
             'document_category' => $request->document_category,
             'file_name' => $fileName,
@@ -1096,7 +1103,7 @@ class ConferenceController extends Controller
             'file_size' => $file->getSize(),
         ]);
 
-        return ApiResponse::created($document, 'Document created successfully');
+        return ApiResponse::success($document, 'Document created successfully', [], 201);
     }
 
     /**
