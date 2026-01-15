@@ -13,7 +13,17 @@ return new class extends Migration
     {
         Schema::create('author_page_config', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('conference_id');
+            $table->enum('conference_format', ['in_person', 'virtual', 'hybrid']);
+            $table->string('cmt_url')->nullable();
+            $table->string('submission_email')->nullable();
+            $table->boolean('blind_review_enabled')->default(false);
+            $table->boolean('camera_ready_required')->default(true);
+            $table->text('special_instructions')->nullable();
+            $table->text('acknowledgment_text')->nullable();
             $table->timestamps();
+            
+            $table->foreign('conference_id')->references('id')->on('conferences')->onDelete('cascade');
         });
     }
 

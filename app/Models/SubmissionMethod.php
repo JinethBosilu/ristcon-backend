@@ -14,6 +14,7 @@ class SubmissionMethod extends Model
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'document_type',
         'submission_method',
         'email_address',
@@ -31,5 +32,13 @@ class SubmissionMethod extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the submission method
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 }

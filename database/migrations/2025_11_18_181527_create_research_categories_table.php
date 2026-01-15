@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('research_categories', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('conference_id');
+            $table->string('category_code', 10);
+            $table->string('category_name');
+            $table->text('description')->nullable();
+            $table->integer('display_order');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
+            
+            $table->foreign('conference_id')->references('id')->on('conferences')->onDelete('cascade');
         });
     }
 

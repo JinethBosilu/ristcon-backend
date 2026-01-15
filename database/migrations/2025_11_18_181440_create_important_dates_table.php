@@ -13,7 +13,16 @@ return new class extends Migration
     {
         Schema::create('important_dates', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('conference_id');
+            $table->enum('date_type', ['submission_deadline', 'notification', 'camera_ready', 'conference_date', 'registration_deadline', 'other']);
+            $table->date('date_value');
+            $table->boolean('is_extended')->default(false);
+            $table->integer('display_order');
+            $table->string('display_label');
+            $table->text('notes')->nullable();
             $table->timestamps();
+            
+            $table->foreign('conference_id')->references('id')->on('conferences')->onDelete('cascade');
         });
     }
 

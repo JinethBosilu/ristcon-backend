@@ -5,22 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 class ConferenceDocument extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $table = 'conference_documents';
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'document_category',
         'file_name',
         'file_path',
         'display_name',
-        'is_available',
+        'is_active',
         'button_width_percent',
         'display_order',
         'mime_type',
@@ -28,13 +28,13 @@ class ConferenceDocument extends Model
     ];
 
     protected $casts = [
-        'is_available' => 'boolean',
+        'is_active' => 'boolean',
         'button_width_percent' => 'integer',
         'display_order' => 'integer',
         'file_size' => 'integer',
     ];
 
-    protected $appends = ['download_url', 'file_size_formatted'];
+    protected $appends = ['download_url', 'file_size_formatted', 'is_available'];
 
     /**
      * Get the conference that owns the document
@@ -45,11 +45,19 @@ class ConferenceDocument extends Model
     }
 
     /**
+     * Get the edition that owns the document
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
+    }
+
+    /**
      * Get the full download URL
      */
     public function getDownloadUrlAttribute(): ?string
     {
-        if ($this->is_available && $this->file_path) {
+        if ($this->is_active && $this->file_path) {
             return Storage::url($this->file_path);
         }
 
@@ -78,11 +86,20 @@ class ConferenceDocument extends Model
     }
 
     /**
-     * Scope to get available documents
+     * Backward compatibility accessor for is_available
+     * Maps to is_active field
      */
-    public function scopeAvailable($query)
+    public function getIsAvailableAttribute(): bool
     {
-        return $query->where('is_available', true);
+        return $this->is_active;
+    }
+
+    /**
+     * Scope to get active documents
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     /**

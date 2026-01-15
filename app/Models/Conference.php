@@ -24,6 +24,7 @@ class Conference extends Model
         'description',
         'status',
         'general_email',
+        'availability_hours',
         'last_updated',
         'copyright_year',
         'site_version',
@@ -132,6 +133,43 @@ class Conference extends Model
     }
 
     /**
+     * Get payment information for the conference
+     */
+    public function paymentInformation(): HasMany
+    {
+        return $this->hasMany(PaymentInformation::class, 'conference_id')
+            ->orderBy('display_order');
+    }
+
+    /**
+     * Get registration fees for the conference
+     */
+    public function registrationFees(): HasMany
+    {
+        return $this->hasMany(RegistrationFee::class, 'conference_id')
+            ->orderBy('display_order');
+    }
+
+    /**
+     * Get payment policies for the conference
+     */
+    public function paymentPolicies(): HasMany
+    {
+        return $this->hasMany(PaymentPolicy::class, 'conference_id')
+            ->orderBy('display_order');
+    }
+
+    /**
+     * Get social media links for the conference
+     */
+    public function socialMediaLinks(): HasMany
+    {
+        return $this->hasMany(SocialMediaLink::class, 'conference_id')
+            ->where('is_active', true)
+            ->orderBy('display_order');
+    }
+
+    /**
      * Scope to get upcoming conferences
      */
     public function scopeUpcoming($query)
@@ -145,6 +183,15 @@ class Conference extends Model
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
+    }
+
+    /**
+     * Get abstract formats for the conference
+     */
+    public function abstractFormats(): HasMany
+    {
+        return $this->hasMany(AbstractFormat::class, 'conference_id')
+            ->orderBy('display_order');
     }
 
     /**

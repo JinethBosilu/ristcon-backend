@@ -5,16 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CommitteeMember extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $table = 'committee_members';
 
     protected $fillable = [
         'conference_id',
+        'edition_id',
         'committee_type_id',
         'full_name',
         'designation',
@@ -25,6 +25,7 @@ class CommitteeMember extends Model
         'country',
         'is_international',
         'display_order',
+        'photo_path',
     ];
 
     protected $casts = [
@@ -38,6 +39,14 @@ class CommitteeMember extends Model
     public function conference(): BelongsTo
     {
         return $this->belongsTo(Conference::class, 'conference_id');
+    }
+
+    /**
+     * Get the edition that owns the committee member
+     */
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(ConferenceEdition::class, 'edition_id');
     }
 
     /**

@@ -13,7 +13,18 @@ return new class extends Migration
     {
         Schema::create('contact_persons', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('conference_id');
+            $table->string('full_name');
+            $table->string('role');
+            $table->string('department')->nullable();
+            $table->string('mobile');
+            $table->string('phone')->nullable();
+            $table->string('email');
+            $table->text('address')->nullable();
+            $table->integer('display_order');
             $table->timestamps();
+            
+            $table->foreign('conference_id')->references('id')->on('conferences')->onDelete('cascade');
         });
     }
 
