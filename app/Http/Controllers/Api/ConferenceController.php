@@ -619,7 +619,7 @@ class ConferenceController extends Controller
         }
 
         // Note: We intentionally DO NOT clone documents and assets 
-        // because file paths would be invalid. Admins will upload new files.
+        // because they require actual file uploads. Admins must upload files manually for each edition.
     }
 
     /**
@@ -700,7 +700,7 @@ class ConferenceController extends Controller
 
         if (!$edition->canBeDeleted()) {
             return ApiResponse::error(
-                'Cannot delete this edition. Active and published editions cannot be deleted.',
+                'Cannot delete this edition. Published editions must be set as draft or archived first. Active editions cannot be deleted.',
                 400
             );
         }
@@ -1586,7 +1586,7 @@ class ConferenceController extends Controller
 
         $asset = \App\Models\ConferenceAsset::create([
             'edition_id' => $editionId,
-            'conference_id' => $edition->conference_id,
+            'conference_id' => 1, // Legacy field - always 1 for RISTCON
             'asset_type' => $validated['asset_type'],
             'file_name' => $fileName,
             'file_path' => $filePath,
@@ -2227,7 +2227,7 @@ class ConferenceController extends Controller
                     'website_type' => $edition->is_legacy_site ? 'legacy' : 'unified',
                     'url' => $edition->is_legacy_site 
                         ? $edition->legacy_website_url 
-                        : "/{$edition->year}",
+                        : "/ristcon/{$edition->year}",
                     'is_legacy' => $edition->is_legacy_site,
                 ];
             });

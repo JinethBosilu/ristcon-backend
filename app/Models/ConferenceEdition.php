@@ -395,11 +395,12 @@ class ConferenceEdition extends Model
             return false;
         }
 
-        // Don't allow deletion of published editions unless archived
+        // Don't allow deletion of published editions (must be draft, archived, or cancelled)
         if ($this->status === 'published') {
             return false;
         }
 
+        // Allow deletion of draft, archived, and cancelled editions
         return true;
     }
 

@@ -19,16 +19,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        'http://localhost:3000',
-        'http://localhost:5173',  // Admin panel
-        'http://localhost:8080',
-        'http://localhost:8081',  // Public frontend
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:5173',  // Admin panel
-        'http://127.0.0.1:8080',
-        'http://127.0.0.1:8081',  // Public frontend
-    ],
+    'allowed_origins' => array_filter([
+        env('FRONTEND_URL', 'http://localhost'),
+        env('ADMIN_URL', 'http://localhost'),
+        'http://localhost',
+        'http://127.0.0.1',
+    ]),
 
     'allowed_origins_patterns' => [],
 
