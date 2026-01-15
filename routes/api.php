@@ -36,6 +36,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/conferences/{year}/assets', [ConferenceController::class, 'assets']);
     Route::get('/conferences/{year}/social-media', [ConferenceController::class, 'socialMediaLinks']);
     
+    // Past events route
+    Route::get('/past-events/{year?}', [ConferenceController::class, 'getPastEvents']);
+    
     // Event locations (separate management)
     Route::get('/event-locations/{year}', [EventLocationController::class, 'show']);
     
@@ -61,6 +64,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/editions/{id}/activate', [ConferenceController::class, 'activateEdition']);
         Route::post('/editions/{id}/publish', [ConferenceController::class, 'publishEdition']);
         Route::post('/editions/{id}/archive', [ConferenceController::class, 'archiveEdition']);
+        Route::post('/editions/{id}/draft', [ConferenceController::class, 'draftEdition']);
         
         // Speakers management (edition-based)
         Route::get('/editions/{editionId}/speakers', [ConferenceController::class, 'getEditionSpeakers']);

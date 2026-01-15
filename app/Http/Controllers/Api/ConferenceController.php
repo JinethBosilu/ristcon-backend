@@ -774,6 +774,24 @@ class ConferenceController extends Controller
         return ApiResponse::success($edition, 'Edition archived successfully');
     }
 
+    /**
+     * Set an edition as draft (unpublish)
+     */
+    public function draftEdition(int $id): JsonResponse
+    {
+        $edition = \App\Models\ConferenceEdition::find($id);
+
+        if (!$edition) {
+            return ApiResponse::notFound("Conference edition not found");
+        }
+
+        if (!$edition->draft()) {
+            return ApiResponse::error('Cannot set active edition as draft', 400);
+        }
+
+        return ApiResponse::success($edition, 'Edition set as draft successfully');
+    }
+
     // ==================== SPEAKERS MANAGEMENT ====================
 
     /**
@@ -2179,6 +2197,46 @@ class ConferenceController extends Controller
 
         $config->delete();
         return ApiResponse::success(null, 'Author config deleted successfully');
+    }
+
+    /**
+     * Get past conference editions
+     * Returns all editions prior to the specified year (or current year if not provided)
+     * with appropriate website URLs
+     * 
+     * @param int|null $year The year to use as reference (optional, defaults to current year)
+     */
+    public function getPastEvents(?int $year = null): JsonResponse
+    {
+        $referenceYear = $year ?? now()->year;
+        
+        $pastEditions = \App\Models\ConferenceEdition::where('year', '<', $referenceYear)
+            ->where('status', '!=', 'cancelled')
+            ->orderBy('year', 'desc')
+            ->get()
+            ->map(function ($edition) {
+                return [
+                    'id' => $edition->id,
+                    'year' => $edition->year,
+                    'edition_number' => $edition->edition_number,
+                    'name' => $edition->name,
+                    'theme' => $edition->theme,
+                    'conference_date' => $edition->conference_date,
+                    'venue_type' => $edition->venue_type,
+                    'venue_location' => $edition->venue_location,
+                    'website_type' => $edition->is_legacy_site ? 'legacy' : 'unified',
+                    'url' => $edition->is_legacy_site 
+                        ? $edition->legacy_website_url 
+                        : "/{$edition->year}",
+                    'is_legacy' => $edition->is_legacy_site,
+                ];
+            });
+
+        return ApiResponse::success(
+            $pastEditions,
+            'Past conference editions retrieved successfully',
+            ['total' => $pastEditions->count(), 'reference_year' => $referenceYear]
+        );
     }
 }
 

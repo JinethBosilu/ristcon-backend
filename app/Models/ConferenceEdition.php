@@ -441,6 +441,19 @@ class ConferenceEdition extends Model
         return $this->save();
     }
 
+    /**
+     * Set this edition as draft (unpublish).
+     */
+    public function draft(): bool
+    {
+        if ($this->is_active_edition) {
+            return false; // Cannot set active edition as draft
+        }
+
+        $this->status = 'draft';
+        return $this->save();
+    }
+
     // ==================== EVENTS ====================
 
     /**
