@@ -14,7 +14,7 @@ class ConferenceService
     /**
      * Edition service for resolving conference editions
      */
-    protected EditionService $editionService;
+    public EditionService $editionService;
 
     /**
      * Constructor
