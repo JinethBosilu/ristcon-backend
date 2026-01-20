@@ -37,6 +37,26 @@ class ConferenceController extends Controller
     }
 
     /**
+     * Get the active conference edition
+     */
+    public function getActiveEdition(ConferenceQueryRequest $request): JsonResponse
+    {
+        $activeEdition = $this->conferenceService->editionService->getActiveEdition();
+
+        if (!$activeEdition) {
+            return ApiResponse::notFound("No active conference edition found");
+        }
+
+        $includes = $request->input('include');
+        if ($includes) {
+            $conference = $this->conferenceService->getConferenceByYear($activeEdition->year, $includes);
+            return ApiResponse::success($conference);
+        }
+
+        return ApiResponse::success($activeEdition);
+    }
+
+    /**
      * Get conference by year
      */
     public function show(ConferenceQueryRequest $request, int $year): JsonResponse

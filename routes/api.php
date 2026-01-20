@@ -24,6 +24,7 @@ Route::prefix('v1')->group(function () {
     
     // Conference routes
     Route::get('/conferences', [ConferenceController::class, 'index']);
+    Route::get('/conferences/active', [ConferenceController::class, 'getActiveEdition']);
     Route::get('/conferences/{year}', [ConferenceController::class, 'show']);
     Route::get('/conferences/{year}/speakers', [ConferenceController::class, 'speakers']);
     Route::get('/conferences/{year}/important-dates', [ConferenceController::class, 'importantDates']);
